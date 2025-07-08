@@ -1,0 +1,5 @@
+upstream/utils/*.log
+upstream/utils/*.dvi
+upstream/utils/*.idx
+upstream/utils/*.toc
+upstream/utils/*.scn

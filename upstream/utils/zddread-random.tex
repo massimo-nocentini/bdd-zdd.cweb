@@ -1,0 +1,283 @@
+\input cwebmac
+\datethis
+
+\N{1}{1\*}Intro. This program reads output from an {\mc o} command in  {\mc
+BDD14}
+into internal arrays, by brute force.
+
+Here I generate a random solution.
+
+The output from an {\mc o} command in {\mc BDD15}
+can be read in an identical fashion,
+so {\mc zddread.w} is identical to {\mc bddread.w}.
+However, the interpretations are different
+and the correct program must be applied to each output.
+
+Note that if a variable is not present in the input to {\mc bddread}
+then it is ignored.
+If there is a variable that is not present in the BDD
+(because it is allowed to be true or false in all solutions),
+then you need to add this possibility yourself.
+For example, you must multiply the BDD solution count by a factor of 2
+for every such variable.
+This is typically not a problem in ZDDs,
+because a variable not present in a ZDD is forced to be false.
+
+\Y\B\4\D$\\{memsize}$ \5
+\T{40000000}\C{ this many nodes }\par
+\B\4\D$\\{varsize}$ \5
+\T{8192}\C{ this many variables }\par
+\B\4\D$\\{bdds}$ \5
+\T{1}\C{ this many BDDs }\par
+\B\4\D$\\{bufsize}$ \5
+\T{100}\C{ buffer size; 100 is plenty big }\par
+\Y\B\8\#\&{include} \.{<stdio.h>}\6
+\8\#\&{include} \.{<stdlib.h>}\6
+\8\#\&{include} \.{"gb\_flip.h"}\6
+\&{typedef} \&{struct} ${}\{{}$\1\6
+\&{int} \|v;\6
+\&{int} \\{lo};\6
+\&{int} \\{hi};\6
+\&{int} \\{mark};\2\6
+${}\}{}$ \&{node};\6
+\&{int} \\{present}[\\{varsize}];\6
+\&{node} ${}{*}\\{mem}[\\{bdds}];{}$\6
+\&{long} \&{long} \\{count}[\T{3}][\\{memsize}];\6
+\&{int} \\{sols}${},\39\\{seed}{}$;\C{ command-line parameters }\6
+\&{int} \\{root}[\\{bdds}];\6
+\&{FILE} ${}{*}\\{infile};{}$\6
+\&{char} \\{buf}[\\{bufsize}];\6
+\&{unsigned} \&{int} \\{i1}${},\39\\{i2},\39\\{i3},\39\\{i4};{}$\6
+\&{int} \\{memmax};\7
+\X2\*:Subroutines\X\7
+\1\1\&{int} \\{main}(\&{int} \\{argc}${},\39{}$\&{char} ${}{*}\\{argv}[\,])\2%
+\2{}$\6
+${}\{{}$\1\6
+\&{register} \&{int} \|j${},\39\|k,\39\|r,\39\\{minv};{}$\7
+\&{if} ${}(\\{argc}\I\T{4}\V\\{sscanf}(\\{argv}[\T{2}],\39\.{"\%d"},\39{\AND}%
+\\{sols})\I\T{1}\V\\{sscanf}(\\{argv}[\T{3}],\39\.{"\%d"},\39{\AND}\\{seed})\I%
+\T{1}){}$\5
+${}\{{}$\1\6
+${}\\{fprintf}(\\{stderr},\39\.{"Usage:\ \%s\ foo.zdd\ s}\)\.{ols\ seed\\n"},%
+\39\\{argv}[\T{0}]);{}$\6
+${}\\{exit}({-}\T{1});{}$\6
+\4${}\}{}$\2\6
+\\{gb\_init\_rand}(\\{seed});\6
+\&{for} ${}(\|r\K\T{0};{}$ ${}\|r<\\{bdds};{}$ ${}\|r\PP){}$\5
+${}\{{}$\1\6
+${}\\{mem}[\|r]\K{}$(\&{node} ${}{*})\,\\{malloc}(\\{memsize}*\&{sizeof}(%
+\&{node}));{}$\6
+\&{if} ${}(\R\\{mem}[\|r]){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"Sorry,\ I\ can't\ allo}\)\.{cate\ mem[\%d]!\\n"},\39\|r);{}$\6
+${}\\{exit}({-}\T{99});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|k\K\T{0};{}$ ${}\|k<\\{memsize};{}$ ${}\|k\PP){}$\1\5
+${}\\{mem}[\|r][\|k].\\{lo}\K\\{mem}[\|r][\|k].\\{hi}\K\T{0};{}$\2\6
+\&{if} ${}(\R(\\{infile}\K\\{fopen}(\\{argv}[\|r+\T{1}],\39\.{"r"}))){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"Sorry,\ I\ can't\ open}\)\.{\ `\%s'\ for\ reading!\\n}\)%
+\.{"},\39\\{argv}[\|r+\T{1}]);{}$\6
+${}\\{exit}({-}\T{1});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|k\K\T{0},\39\\{minv}\K\\{varsize};{}$  ; \,)\5
+${}\{{}$\1\6
+\&{if} ${}(\R\\{fgets}(\\{buf},\39\\{bufsize},\39\\{infile})){}$\1\5
+\&{break};\2\6
+${}\|j\K\\{sscanf}(\\{buf},\39\.{"\%x:\ (\~\%u?\%x:\%x)\\n"},\39{\AND}\\{i1},%
+\39{\AND}\\{i2},\39{\AND}\\{i3},\39{\AND}\\{i4});{}$\6
+\&{if} ${}(\|j\I\T{4}){}$\1\5
+${}\\{printf}(\.{"!\ I\ got\ only\ \%d\ inp}\)\.{uts\ from\ the\ line\ \%s}\)%
+\.{"},\39\|j,\39\\{buf});{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{if} ${}(\\{i1}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i1};{}$\2\6
+\&{if} ${}(\\{i3}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i3};{}$\2\6
+\&{if} ${}(\\{i4}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i4};{}$\2\6
+\&{if} ${}(\\{i1}\G\\{memsize}\V\\{i2}\G\\{varsize}\V\\{i3}\G\\{memsize}\V%
+\\{i4}\G\\{memsize}){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"!\ address\ out\ of\ ra}\)\.{nge\ in\ the\ line\ \%s"},\39%
+\\{buf});{}$\6
+${}\\{exit}({-}\T{69});{}$\6
+\4${}\}{}$\5
+\2\&{else} \&{if} ${}(\\{mem}[\|r][\\{i1}].\\{lo}\V\\{mem}[\|r][\\{i1}].%
+\\{hi}){}$\1\5
+${}\\{printf}(\.{"!\ clobbered\ node\ in}\)\.{\ the\ line\ \%s"},\39%
+\\{buf});{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{if} ${}(\\{i2}<\\{minv}){}$\1\5
+${}\\{minv}\K\\{i2},\39\\{root}[\|r]\K\\{i1};{}$\2\6
+${}\|k\PP,\39\\{mem}[\|r][\\{i1}].\|v\K\\{i2},\39\\{mem}[\|r][\\{i1}].\\{lo}\K%
+\\{i3},\39\\{mem}[\|r][\\{i1}].\\{hi}\K\\{i4};{}$\6
+${}\\{present}[\\{i2}]\K\T{1};{}$\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+${}\\{fprintf}(\\{stderr},\39\.{"\%d\ nodes\ input\ into}\)\.{\ mem\%d\\n"},\39%
+\|k,\39\|r);{}$\6
+${}\\{fprintf}(\\{stderr},\39\.{"(memmax=\%d)\\n"},\39\\{memmax});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|j\K\|k\K\T{0};{}$ ${}\|j<\\{varsize};{}$ ${}\|j\PP){}$\1\6
+\&{if} (\\{present}[\|j])\1\5
+${}\|k\PP;{}$\2\2\6
+${}\\{fprintf}(\\{stderr},\39\.{"There\ are\ \%d\ variab}\)\.{les.\\n"},\39%
+\|k);{}$\6
+\X4\*:Do our thing\X;\6
+\4${}\}{}$\2\par
+\fi
+
+\M{2\*}First, a recursive subroutine.
+
+\Y\B\4\D$\\{two\_to\_the\_62}$ \5
+\T{\^4000000000000000}\par
+\Y\B\4\X2\*:Subroutines\X${}\E{}$\6
+\1\1\&{void} \\{countsols}(\&{int} \|p)\2\2\6
+${}\{{}$\1\6
+\&{register} \&{int} \|q;\6
+\&{long} \&{long} \\{c0}${}\K\T{0},\39\\{c1}\K\T{0},\39\\{c2}\K\T{0};{}$\7
+${}\|q\K\\{mem}[\T{0}][\|p].\\{lo};{}$\6
+\&{if} (\|q)\5
+${}\{{}$\1\6
+\&{if} ${}(\\{mem}[\T{0}][\|q].\\{mark}\E\T{0}){}$\1\5
+\\{countsols}(\|q);\2\6
+${}\\{c0}\K\\{count}[\T{0}][\|q],\39\\{c1}\K\\{count}[\T{1}][\|q],\39\\{c2}\K%
+\\{count}[\T{2}][\|q];{}$\6
+\4${}\}{}$\2\6
+${}\|q\K\\{mem}[\T{0}][\|p].\\{hi};{}$\6
+\&{if} (\|q)\5
+${}\{{}$\1\6
+\&{if} ${}(\\{mem}[\T{0}][\|q].\\{mark}\E\T{0}){}$\1\5
+\\{countsols}(\|q);\2\6
+${}\\{c0}\MRL{+{\K}}\\{count}[\T{0}][\|q],\39\\{c1}\MRL{+{\K}}\\{count}[\T{1}][%
+\|q],\39\\{c2}\MRL{+{\K}}\\{count}[\T{2}][\|q];{}$\6
+\&{if} ${}(\\{c2}\G\\{two\_to\_the\_62}){}$\1\5
+${}\\{c1}\PP,\39\\{c2}\MRL{-{\K}}\\{two\_to\_the\_62};{}$\2\6
+\&{if} ${}(\\{c1}\G\\{two\_to\_the\_62}){}$\1\5
+${}\\{c0}\PP,\39\\{c1}\MRL{-{\K}}\\{two\_to\_the\_62};{}$\2\6
+\&{if} ${}(\\{c0}\G\\{two\_to\_the\_62}){}$\5
+${}\{{}$\1\6
+${}\\{fprintf}(\\{stderr},\39\.{"Overflow\ (186\ bits\ }\)\.{or\ more)!%
+\\n"});{}$\6
+\\{printf}(\.{"Overflow\ (186\ bits\ }\)\.{or\ more)!\\n"});\6
+${}\\{exit}({-}\T{6});{}$\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+${}\\{mem}[\T{0}][\|p].\\{mark}\K\T{1};{}$\6
+${}\\{count}[\T{0}][\|p]\K\\{c0},\39\\{count}[\T{1}][\|p]\K\\{c1},\39\\{count}[%
+\T{2}][\|p]\K\\{c2};{}$\6
+\4${}\}{}$\2\par
+\A3\*.
+\U1\*.\fi
+
+\M{3\*}I also need an extralong version of \PB{\\{gb\_unif\_rand}}.
+
+\Y\B\4\X2\*:Subroutines\X${}\mathrel+\E{}$\6
+\1\1\&{long} \&{long} \\{long\_unif\_rand}(\&{long} \&{long} \|m)\2\2\6
+${}\{{}$\1\6
+\&{register} \&{long} \&{long} \|t${}\K\\{two\_to\_the\_62}-(\\{two\_to\_the%
+\_62}\MOD\|m);{}$\6
+\&{register} \&{long} \&{long} \|r;\7
+\&{do}\5
+${}\{{}$\1\6
+${}\|r\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+\\{gb%
+\_next\_rand}(\,);{}$\6
+\4${}\}{}$\2\5
+\&{while} ${}(\|t\Z\|r);{}$\6
+\&{return} \|r${}\MOD\|m;{}$\6
+\4${}\}{}$\2\7
+\&{long} \&{long} \\{in0}${},\39\\{in1},\39\\{in2},\39\\{out0},\39\\{out1},\39%
+\\{out2};{}$\7
+\1\1\&{void} \\{triply\_longlong\_unif\_rand}(\&{void})\2\2\6
+${}\{{}$\1\6
+\&{register} \&{long} \&{long} \|t;\7
+\&{if} ${}(\R\\{in0}){}$\5
+${}\{{}$\1\6
+${}\\{out0}\K\T{0};{}$\6
+\&{if} ${}(\R\\{in1}){}$\1\5
+${}\\{out1}\K\T{0},\39\\{out2}\K\\{long\_unif\_rand}(\\{in2});{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{for} ${}(\|t\K\T{1};{}$ ${}\|t\Z\\{in1};{}$ ${}\|t\MRL{{\LL}{\K}}\T{1}){}$\1%
+\5
+;\2\6
+\&{while} (\T{1})\5
+${}\{{}$\1\6
+${}\\{out1}\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+%
+\\{gb\_next\_rand}(\,);{}$\6
+${}\\{out1}\MRL{\AND{\K}}\|t-\T{1};{}$\6
+\&{if} ${}(\\{out1}\Z\\{in1}){}$\5
+${}\{{}$\1\6
+${}\\{out2}\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+%
+\\{gb\_next\_rand}(\,);{}$\6
+\&{if} ${}(\\{out1}<\\{in1}\V\\{out2}<\\{in2}){}$\1\5
+\&{break};\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{for} ${}(\|t\K\T{1};{}$ ${}\|t\Z\\{in0};{}$ ${}\|t\MRL{{\LL}{\K}}\T{1}){}$\1%
+\5
+;\2\6
+\&{while} (\T{1})\5
+${}\{{}$\1\6
+${}\\{out0}\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+%
+\\{gb\_next\_rand}(\,);{}$\6
+${}\\{out0}\MRL{\AND{\K}}\|t-\T{1};{}$\6
+\&{if} ${}(\\{out0}\Z\\{in0}){}$\5
+${}\{{}$\1\6
+${}\\{out1}\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+%
+\\{gb\_next\_rand}(\,);{}$\6
+${}\\{out2}\K{}$(((\&{long} \&{long})\,\\{gb\_next\_rand}(\,))${}\LL\T{31})+%
+\\{gb\_next\_rand}(\,);{}$\6
+\&{if} ${}(\\{out0}<\\{in0}\V\\{out1}<\\{in1}\V(\\{out1}\E\\{in1}\W\\{out2}<%
+\\{in2})){}$\1\5
+\&{break};\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\par
+\fi
+
+\M{4\*}\B\X4\*:Do our thing\X${}\E{}$\6
+$\\{count}[\T{2}][\T{1}]\K\T{1},\39\\{mem}[\T{0}][\T{1}].\\{mark}\K\T{1},\39%
+\\{mem}[\T{0}][\T{1}].\|v\K\\{varsize};{}$\6
+\\{countsols}(\\{root}[\T{0}]);\6
+\&{for} ${}(\|r\K\T{0};{}$ ${}\|r<\\{sols};{}$ ${}\|r\PP){}$\5
+${}\{{}$\1\6
+\&{for} ${}(\|k\K\\{root}[\T{0}];{}$ ${}\|k>\T{1};{}$ \,)\5
+${}\{{}$\1\6
+${}\|j\K\\{mem}[\T{0}][\|k].\\{lo};{}$\6
+${}\\{in0}\K\\{count}[\T{0}][\|k],\39\\{in1}\K\\{count}[\T{1}][\|k],\39\\{in2}%
+\K\\{count}[\T{2}][\|k];{}$\6
+\\{triply\_longlong\_unif\_rand}(\,);\6
+\&{if} ${}(\\{count}[\T{0}][\|j]<\\{out0}\V(\\{count}[\T{0}][\|j]\E\\{out0}\W%
+\\{count}[\T{1}][\|j]<\\{out1})\V(\\{count}[\T{0}][\|j]\E\\{out0}\W\\{count}[%
+\T{1}][\|j]\E\\{out1}\W\\{count}[\T{2}][\|j]\Z\\{out2})){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"\ \%d"},\39\\{mem}[\T{0}][\|k].\|v);{}$\6
+${}\|k\K\\{mem}[\T{0}][\|k].\\{hi};{}$\6
+\4${}\}{}$\5
+\2\&{else}\1\5
+${}\|k\K\|j;{}$\2\6
+\4${}\}{}$\2\6
+\\{printf}(\.{"\\n"});\6
+\4${}\}{}$\2\par
+\U1\*.\fi
+
+\N{1}{5\*}Index.
+
+\fi
+
+
+\ch 1\*, 2\*, 3\*, 4\*, 5\*.
+
+\inx
+\fin
+\con

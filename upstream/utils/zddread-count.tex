@@ -1,0 +1,205 @@
+\input cwebmac
+\datethis
+
+\N{1}{1\*}Intro. This program reads output from an {\mc o} command in  {\mc
+BDD14}
+into internal arrays, by brute force.
+
+Here I compute the total number of solutions.
+
+The output from an {\mc o} command in {\mc BDD15}
+can be read in an identical fashion,
+so {\mc zddread.w} is identical to {\mc bddread.w}.
+However, the interpretations are different
+and the correct program must be applied to each output.
+
+Note that if a variable is not present in the input to {\mc bddread}
+then it is ignored.
+If there is a variable that is not present in the BDD
+(because it is allowed to be true or false in all solutions),
+then you need to add this possibility yourself.
+For example, you must multiply the BDD solution count by a factor of 2
+for every such variable.
+This is typically not a problem in ZDDs,
+because a variable not present in a ZDD is forced to be false.
+
+\Y\B\4\D$\\{memsize}$ \5
+\T{40000000}\C{ this many nodes }\par
+\B\4\D$\\{varsize}$ \5
+\T{8192}\C{ this many variables }\par
+\B\4\D$\\{bdds}$ \5
+\T{1}\C{ this many BDDs }\par
+\B\4\D$\\{bufsize}$ \5
+\T{100}\C{ buffer size; 100 is plenty big }\par
+\Y\B\8\#\&{include} \.{<stdio.h>}\6
+\8\#\&{include} \.{<stdlib.h>}\6
+\&{typedef} \&{struct} ${}\{{}$\1\6
+\&{int} \|v;\6
+\&{int} \\{lo};\6
+\&{int} \\{hi};\6
+\&{int} \\{mark};\2\6
+${}\}{}$ \&{node};\6
+\&{int} \\{present}[\\{varsize}];\6
+\&{node} ${}{*}\\{mem}[\\{bdds}];{}$\6
+\&{typedef} \&{struct} ${}\{{}$\1\6
+\&{long} \&{long} \\{c2}${},\39\\{c1}{}$;\C{ upper and lower halves }\2\6
+${}\}{}$ \&{dlong};\6
+\&{dlong} \\{dlong0}${}\K\{\T{0},\39\T{0}\};{}$\6
+\&{dlong} \\{dlong1}${}\K\{\T{0},\39\T{1}\};{}$\6
+\&{dlong} \\{count}[\\{memsize}];\6
+\&{int} \\{root}[\\{bdds}];\6
+\&{FILE} ${}{*}\\{infile};{}$\6
+\&{char} \\{buf}[\\{bufsize}];\6
+\&{unsigned} \&{int} \\{i1}${},\39\\{i2},\39\\{i3},\39\\{i4};{}$\6
+\&{int} \\{memmax};\7
+\X2\*:Subroutines\X\7
+\1\1\&{int} \\{main}(\&{int} \\{argc}${},\39{}$\&{char} ${}{*}\\{argv}[\,])\2%
+\2{}$\6
+${}\{{}$\1\6
+\&{register} \&{int} \|j${},\39\|k,\39\|r,\39\\{minv};{}$\7
+\&{for} ${}(\|r\K\T{0};{}$ ${}\|r<\\{bdds};{}$ ${}\|r\PP){}$\5
+${}\{{}$\1\6
+${}\\{mem}[\|r]\K{}$(\&{node} ${}{*})\,\\{malloc}(\\{memsize}*\&{sizeof}(%
+\&{node}));{}$\6
+\&{if} ${}(\R\\{mem}[\|r]){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"Sorry,\ I\ can't\ allo}\)\.{cate\ mem[\%d]!\\n"},\39\|r);{}$\6
+${}\\{exit}({-}\T{99});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|k\K\T{0};{}$ ${}\|k<\\{memsize};{}$ ${}\|k\PP){}$\1\5
+${}\\{mem}[\|r][\|k].\\{lo}\K\\{mem}[\|r][\|k].\\{hi}\K\T{0};{}$\2\6
+\&{if} ${}(\R(\\{infile}\K\\{fopen}(\\{argv}[\|r+\T{1}],\39\.{"r"}))){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"Sorry,\ I\ can't\ open}\)\.{\ `\%s'\ for\ reading!\\n}\)%
+\.{"},\39\\{argv}[\|r+\T{1}]);{}$\6
+${}\\{exit}({-}\T{1});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|k\K\T{0},\39\\{minv}\K\\{varsize};{}$  ; \,)\5
+${}\{{}$\1\6
+\&{if} ${}(\R\\{fgets}(\\{buf},\39\\{bufsize},\39\\{infile})){}$\1\5
+\&{break};\2\6
+${}\|j\K\\{sscanf}(\\{buf},\39\.{"\%x:\ (\~\%u?\%x:\%x)\\n"},\39{\AND}\\{i1},%
+\39{\AND}\\{i2},\39{\AND}\\{i3},\39{\AND}\\{i4});{}$\6
+\&{if} ${}(\|j\I\T{4}){}$\1\5
+${}\\{printf}(\.{"!\ I\ got\ only\ \%d\ inp}\)\.{uts\ from\ the\ line\ \%s}\)%
+\.{"},\39\|j,\39\\{buf});{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{if} ${}(\\{i1}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i1};{}$\2\6
+\&{if} ${}(\\{i3}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i3};{}$\2\6
+\&{if} ${}(\\{i4}>\\{memmax}){}$\1\5
+${}\\{memmax}\K\\{i4};{}$\2\6
+\&{if} ${}(\\{i1}\G\\{memsize}\V\\{i2}\G\\{varsize}\V\\{i3}\G\\{memsize}\V%
+\\{i4}\G\\{memsize}){}$\5
+${}\{{}$\1\6
+${}\\{printf}(\.{"!\ address\ out\ of\ ra}\)\.{nge\ in\ the\ line\ \%s"},\39%
+\\{buf});{}$\6
+${}\\{exit}({-}\T{69});{}$\6
+\4${}\}{}$\5
+\2\&{else} \&{if} ${}(\\{mem}[\|r][\\{i1}].\\{lo}\V\\{mem}[\|r][\\{i1}].%
+\\{hi}){}$\1\5
+${}\\{printf}(\.{"!\ clobbered\ node\ in}\)\.{\ the\ line\ \%s"},\39%
+\\{buf});{}$\2\6
+\&{else}\5
+${}\{{}$\1\6
+\&{if} ${}(\\{i2}<\\{minv}){}$\1\5
+${}\\{minv}\K\\{i2},\39\\{root}[\|r]\K\\{i1};{}$\2\6
+${}\|k\PP,\39\\{mem}[\|r][\\{i1}].\|v\K\\{i2},\39\\{mem}[\|r][\\{i1}].\\{lo}\K%
+\\{i3},\39\\{mem}[\|r][\\{i1}].\\{hi}\K\\{i4};{}$\6
+${}\\{present}[\\{i2}]\K\T{1};{}$\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+\4${}\}{}$\2\6
+${}\\{fprintf}(\\{stderr},\39\.{"\%d\ nodes\ input\ into}\)\.{\ mem\%d\\n"},\39%
+\|k,\39\|r);{}$\6
+${}\\{fprintf}(\\{stderr},\39\.{"(memmax=\%d)\\n"},\39\\{memmax});{}$\6
+\4${}\}{}$\2\6
+\&{for} ${}(\|j\K\|k\K\T{0};{}$ ${}\|j<\\{varsize};{}$ ${}\|j\PP){}$\1\6
+\&{if} (\\{present}[\|j])\1\5
+${}\|k\PP;{}$\2\2\6
+${}\\{fprintf}(\\{stderr},\39\.{"There\ are\ \%d\ variab}\)\.{les.\\n"},\39%
+\|k);{}$\6
+\X4\*:Do our thing\X;\6
+\4${}\}{}$\2\par
+\fi
+
+\M{2\*}First, two-longlong fixed point addition on nonnegative integers.
+Here and below I assume that the sums will not exceed
+$10^{36}$.
+
+\Y\B\4\D$\\{ten\_to\_18th}$ \5
+\T{1000000000000000000}\par
+\Y\B\4\X2\*:Subroutines\X${}\E{}$\6
+\1\1\&{dlong} \\{dadd}(\&{dlong} \|x${},\39{}$\&{dlong} \|y)\2\2\6
+${}\{{}$\1\6
+\&{dlong} \|z;\7
+${}\|z.\\{c1}\K\|x.\\{c1}+\|y.\\{c1};{}$\6
+\&{if} ${}(\|z.\\{c1}>\\{ten\_to\_18th}){}$\1\5
+${}\|z.\\{c1}\MRL{-{\K}}\\{ten\_to\_18th},\39\|z.\\{c2}\K\|x.\\{c2}+\|y.\\{c2}+%
+\T{1};{}$\2\6
+\&{else}\1\5
+${}\|z.\\{c2}\K\|x.\\{c2}+\|y.\\{c2};{}$\2\6
+\&{if} ${}(\|z.\\{c2}>\\{ten\_to\_18th}){}$\5
+${}\{{}$\1\6
+${}\\{fprintf}(\\{stderr},\39\.{"Possible\ integer\ ov}\)\.{erflow!\\n"});{}$\6
+\\{printf}(\.{"Possible\ integer\ ov}\)\.{erflow!\\n"});\6
+${}\\{exit}({-}\T{666});{}$\6
+\4${}\}{}$\2\6
+\&{return} \|z;\6
+\4${}\}{}$\2\7
+\1\1\&{void} \\{print\_dlong}(\&{FILE} ${}{*}\|f,\39{}$\&{dlong} \|x)\2\2\6
+${}\{{}$\1\6
+\&{if} ${}(\|x.\\{c2}){}$\1\5
+${}\\{fprintf}(\|f,\39\.{"\%lld\%018lld"},\39\|x.\\{c2},\39\|x.\\{c1});{}$\2\6
+\&{else}\1\5
+${}\\{printf}(\.{"\%lld"},\39\|x.\\{c1});{}$\2\6
+\4${}\}{}$\2\par
+\A3\*.
+\U1\*.\fi
+
+\M{3\*}Next, a recursive subroutine.
+
+\Y\B\4\X2\*:Subroutines\X${}\mathrel+\E{}$\6
+\1\1\&{void} \\{countsols}(\&{int} \|p)\2\2\6
+${}\{{}$\1\6
+\&{register} \&{int} \|q;\6
+\&{dlong} \|c${}\K\\{dlong0};{}$\7
+${}\|q\K\\{mem}[\T{0}][\|p].\\{lo};{}$\6
+\&{if} (\|q)\5
+${}\{{}$\1\6
+\&{if} ${}(\\{mem}[\T{0}][\|q].\\{mark}\E\T{0}){}$\1\5
+\\{countsols}(\|q);\2\6
+${}\|c\K\\{count}[\|q];{}$\6
+\4${}\}{}$\2\6
+${}\|q\K\\{mem}[\T{0}][\|p].\\{hi};{}$\6
+\&{if} (\|q)\5
+${}\{{}$\1\6
+\&{if} ${}(\\{mem}[\T{0}][\|q].\\{mark}\E\T{0}){}$\1\5
+\\{countsols}(\|q);\2\6
+${}\|c\K\\{dadd}(\|c,\39\\{count}[\|q]);{}$\6
+\4${}\}{}$\2\6
+${}\\{mem}[\T{0}][\|p].\\{mark}\K\T{1};{}$\6
+${}\\{count}[\|p]\K\|c;{}$\6
+\4${}\}{}$\2\par
+\fi
+
+\M{4\*}\B\X4\*:Do our thing\X${}\E{}$\6
+$\\{count}[\T{1}]\K\\{dlong1},\39\\{mem}[\T{0}][\T{1}].\\{mark}\K\T{1},\39%
+\\{mem}[\T{0}][\T{1}].\|v\K\\{varsize};{}$\6
+\\{countsols}(\\{root}[\T{0}]);\6
+${}\\{print\_dlong}(\\{stdout},\39\\{count}[\\{root}[\T{0}]]);{}$\6
+\\{printf}(\.{"\ solutions.\\n"});\par
+\U1\*.\fi
+
+\N{1}{5\*}Index.
+
+\fi
+
+
+\ch 1\*, 2\*, 3\*, 4\*, 5\*.
+
+\inx
+\fin
+\con
