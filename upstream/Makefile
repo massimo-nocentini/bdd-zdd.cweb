@@ -14,4 +14,9 @@ cweave:
 		cweave zddread.w zddread-random.ch zddread-random.tex && tex zddread-random.tex && dvipdf zddread-random.dvi && \
 		cweave zddread.w zddread-sols-all.ch zddread-sols-all.tex && tex zddread-sols-all.tex && dvipdf zddread-sols-all.dvi
 
-
+ctangle:
+	cd utils && ctangle zddread.w zddread-count.ch zddread-count.c
+	cd utils && ctangle zddread.w zddread-gf.ch zddread-gf.c
+	cd utils && ctangle zddread.w zddread-minsols-short.ch zddread-minsols-short.c
+	cd utils && ctangle zddread.w zddread-random.ch zddread-random.c
+	cd utils && ctangle zddread.w zddread-sols-all.ch zddread-sols-all.c
