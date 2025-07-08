@@ -3,3 +3,8 @@ upstream/utils/*.dvi
 upstream/utils/*.idx
 upstream/utils/*.toc
 upstream/utils/*.scn
+src/zddread-sols-all
+src/zddread-count
+src/zddread-gf
+src/zddread-minsols-short
+src/zddread-random
